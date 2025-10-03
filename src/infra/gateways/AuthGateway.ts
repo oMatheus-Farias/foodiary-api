@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 import {
+  AdminDeleteUserCommand,
   ConfirmForgotPasswordCommand,
   ForgotPasswordCommand,
   GetTokensFromRefreshTokenCommand,
@@ -113,6 +114,15 @@ export class AuthGateway {
     await cognitoClient.send(command);
   }
 
+  async deleteUser({ externalId }: AuthGateway.DeleteUserParams) {
+    const command = new AdminDeleteUserCommand({
+      UserPoolId: this.appConfig.auth.cognito.pool.id,
+      Username: externalId,
+    });
+
+    await cognitoClient.send(command);
+  }
+
   private getSecretHash(email: string): string {
     const { id, secret } = this.appConfig.auth.cognito.client;
 
@@ -158,5 +168,9 @@ export namespace AuthGateway {
     email: string;
     confirmationCode: string;
     password: string;
+  };
+
+  export type DeleteUserParams = {
+    externalId: string;
   };
 }
