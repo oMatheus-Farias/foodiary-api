@@ -1,0 +1,6 @@
+Resources:
+  MealsBucket:
+    Type: AWS::S3::Bucket
+    # DeletionPolicy: Retain # Change to Retain to avoid bucket deletion on stack removal in production
+    Properties:
+      BucketName: ${self:service}-${self:provider.stage}-meals-bucket-33cz3ptp3tpvhluufnl
