@@ -3,3 +3,5 @@ node_modules
 
 scripts/assets
 scripts/createMeal.ts
+
+.env
