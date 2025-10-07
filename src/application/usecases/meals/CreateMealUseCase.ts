@@ -27,6 +27,7 @@ export class CreateMealUseCase {
       this.mealRepository.create(meal),
       this.mealsFileStorageGateway.createPOST({
         mealId: meal.id,
+        accountId,
         file: {
           key: inputFileKey,
           size: file.size,

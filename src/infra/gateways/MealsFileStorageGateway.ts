@@ -6,6 +6,7 @@ import { Injectable } from '@kernel/decorators/Injectable';
 import { s3Client } from '@infra/clients/s3Client';
 import { AppConfig } from '@shared/config/AppConfig';
 import { minutesToSeconds } from '@shared/utils/minutesToSeconds';
+import { HeadObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class MealsFileStorageGateway {
@@ -21,8 +22,15 @@ export class MealsFileStorageGateway {
     return `${accountId}/${fileName}`;
   }
 
+  getFileURL(fileKey: string): string {
+    const cdn = this.appConfig.cdn.mealsCDN;
+
+    return `https://${cdn}/${fileKey}`;
+  }
+
   async createPOST({
     mealId,
+    accountId,
     file,
   }: MealsFileStorageGateway.CreatePOSTParams): Promise<MealsFileStorageGateway.CreatePOSTResult> {
     const bucket = this.appConfig.storage.s3.mealsBucket;
@@ -40,6 +48,7 @@ export class MealsFileStorageGateway {
       ],
       Fields: {
         'x-amz-meta-mealid': mealId,
+        'x-amz-meta-accountid': accountId,
       },
     });
 
@@ -55,6 +64,26 @@ export class MealsFileStorageGateway {
 
     return { uploadSignature };
   }
+
+  async getFileMetadata({
+    fileKey,
+  }: MealsFileStorageGateway.GetFileMetadataParams): Promise<MealsFileStorageGateway.GetFileMetadataResult> {
+    const command = new HeadObjectCommand({
+      Bucket: this.appConfig.storage.s3.mealsBucket,
+      Key: fileKey,
+    });
+
+    const { Metadata = {} } = await s3Client.send(command);
+
+    if (!Metadata.accountid || !Metadata.mealid) {
+      throw new Error(`[getFileMetadata] Cannot process file "${fileKey}"`);
+    }
+
+    return {
+      accountId: Metadata.accountid,
+      mealId: Metadata.mealid,
+    };
+  }
 }
 
 export namespace MealsFileStorageGateway {
@@ -65,6 +94,7 @@ export namespace MealsFileStorageGateway {
 
   export type CreatePOSTParams = {
     mealId: string;
+    accountId: string;
     file: {
       key: string;
       size: number;
@@ -74,5 +104,14 @@ export namespace MealsFileStorageGateway {
 
   export type CreatePOSTResult = {
     uploadSignature: string;
+  };
+
+  export type GetFileMetadataParams = {
+    fileKey: string;
+  };
+
+  export type GetFileMetadataResult = {
+    accountId: string;
+    mealId: string;
   };
 }
